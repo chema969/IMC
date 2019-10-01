@@ -22,30 +22,62 @@ using namespace std;
 
 int main(int argc, char **argv) {
     // Procesar los argumentos de la línea de comandos
-    bool Tflag = 0, wflag = 0, pflag = 0;
-    char *Tvalue = NULL, *wvalue = NULL;
+    bool Tflag = 0,tflag=0,iflag=0, wflag = 0, pflag = 0,lflag=0,hflag=0,eflag=0,mflag=0,vflag=0,dflag=0;
+    char *Tvalue = NULL, *wvalue = NULL,*tvalue=NULL,*ivalue=NULL,*lvalue=NULL,*hvalue=NULL,*evalue=NULL,*mvalue=NULL,*vvalue=NULL,*dvalue=NULL;
     int c;
 
     opterr = 0;
 
     // a: opción que requiere un argumento
     // a:: el argumento requerido es opcional
-    while ((c = getopt(argc, argv, "T:w:p")) != -1)
+    while ((c = getopt(argc, argv, "t:T:w:i:l:h:e:m:v:d:p")) != -1)
     {
         // Se han añadido los parámetros necesarios para usar el modo opcional de predicción (kaggle).
         // Añadir el resto de parámetros que sean necesarios para la parte básica de las prácticas.
         switch(c){
+        	case 't':
+        		tflag = true;
+        		tvalue = optarg;
+        		break;
             case 'T':
                 Tflag = true;
                 Tvalue = optarg;
                 break;
+            case 'i':
+                iflag = true;
+                ivalue = optarg;
+                break;
+            case 'l':
+                lflag = true;
+                lvalue = optarg;
+                break;            
             case 'w':
                 wflag = true;
                 wvalue = optarg;
                 break;
+            case 'h':
+                hflag = true;
+                hvalue = optarg;
+                break;
+            case 'e':
+                eflag = true;
+                evalue = optarg;
+                break;
+            case 'm':
+                mflag = true;
+                mvalue = optarg;
+                break;
+            case 'v':
+                vflag = true;
+                vvalue = optarg;
+                break;
+            case 'd':
+                dflag = true;
+                dvalue = optarg;
+                break;
             case 'p':
                 pflag = true;
-                break;
+                break
             case '?':
                 if (optopt == 'T' || optopt == 'w' || optopt == 'p')
                     fprintf (stderr, "La opción -%c requiere un argumento.\n", optopt);
