@@ -79,7 +79,7 @@ int main(int argc, char **argv) {
                 pflag = true;
                 break
             case '?':
-                if (optopt == 'T' || optopt == 'w' || optopt == 'p')
+                if (optopt == 'T' || optopt == 'w' || optopt == 'p'||optopt == 't' || optopt == 'i' || optopt == 'l'||optopt == 'h' || optopt == 'e' || optopt == 'm'|| optopt == 'v'|| optopt == 'd')
                     fprintf (stderr, "La opción -%c requiere un argumento.\n", optopt);
                 else if (isprint (optopt))
                     fprintf (stderr, "Opción desconocida `-%c'.\n", optopt);
@@ -92,7 +92,10 @@ int main(int argc, char **argv) {
                 return EXIT_FAILURE;
         }
     }
-
+    if (!tflag){
+          fprintf (stderr, "La opción -t es necesaría para la ejecución.\n", optopt);    
+          return EXIT_FAILURE;
+    }
     if (!pflag) {
         ////////////////////////////////////////
         // MODO DE ENTRENAMIENTO Y EVALUACIÓN //
