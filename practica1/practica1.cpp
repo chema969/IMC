@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
                 break;
             case 'p':
                 pflag = true;
-                break
+                break;
             case '?':
                 if (optopt == 'T' || optopt == 'w' || optopt == 'p'||optopt == 't' || optopt == 'i' || optopt == 'l'||optopt == 'h' || optopt == 'e' || optopt == 'm'|| optopt == 'v'|| optopt == 'd')
                     fprintf (stderr, "La opción -%c requiere un argumento.\n", optopt);
@@ -93,7 +93,7 @@ int main(int argc, char **argv) {
         }
     }
     if (!tflag){
-          fprintf (stderr, "La opción -t es necesaría para la ejecución.\n", optopt);    
+          fprintf (stderr, "La opción -t es necesaría para la ejecución.\n");
           return EXIT_FAILURE;
     }
     if (!pflag) {
@@ -105,22 +105,41 @@ int main(int argc, char **argv) {
     	PerceptronMulticapa mlp;
 
         // Parámetros del mlp. Por ejemplo, mlp.dEta = valorQueSea;
-
+    	int iteraciones=1000;
+    	int capas=1;
+    	int neuronas=5;
+    	if(!Tflag)
+    		Tvalue=tvalue;
+    	if(iflag)
+    		iteraciones=atoi(ivalue);
+    	if(lflag)
+    		capas=atoi(lvalue);
+    	if(hflag)
+    		neuronas=atoi(hvalue);
+    	if(eflag)
+    		mlp.dEta=atof(evalue);
+    	if(mflag)
+    		mlp.dMu=atof(mvalue);
+    	if(vflag)
+    		mlp.dValidacion=atof(vvalue);
+    	if(dflag)
+    		mlp.dDecremento=atof(dvalue);
         // Lectura de datos de entrenamiento y test: llamar a mlp.leerDatos(...)
-
+    	Datos* pDatosTrain=mlp.leerDatos(tvalue);
+        Datos* pDatosTest=mlp.leerDatos(Tvalue);
         // Inicializar vector topología
-        //int *topologia = new int[capas+2];
-        //topologia[0] = pDatosTrain->nNumEntradas;
-        //for(int i=1; i<(capas+2-1); i++)
-        //	topologia[i] = neuronas;
-        //topologia[capas+2-1] = pDatosTrain->nNumSalidas;
+        int *topologia = new int[capas+2];
+        topologia[0] = pDatosTrain->nNumEntradas;
+        for(int i=1; i<(capas+2-1); i++)
+        	topologia[i] = neuronas;
+        topologia[capas+2-1] = pDatosTrain->nNumSalidas;
 
         // Inicializar red con vector de topología
-        //mlp.inicializar(capas+2,topologia);
+        mlp.inicializar(capas+2,topologia);
 
 
         // Semilla de los números aleatorios
-        int semillas[] = {100,200,300,400,500};
+        int semillas[] = {1,2,3,4,5};
         double *erroresTest = new double[5];
         double *erroresTrain = new double[5];
         double mejorErrorTest = 1.0;
