@@ -72,10 +72,12 @@ PerceptronMulticapa::~PerceptronMulticapa() {
 void PerceptronMulticapa::liberarMemoria() {
 	for(int i=0;i<nNumCapas;i++){
 		for(int j=0;j<pCapas[i].nNumNeuronas;j++){
-			delete pCapas[i].pNeuronas[j].deltaW;
-			delete pCapas[i].pNeuronas[j].ultimoDeltaW;
-			delete pCapas[i].pNeuronas[j].w;
-			delete pCapas[i].pNeuronas[j].wCopia;
+			if(i!=0){
+				delete pCapas[i].pNeuronas[j].deltaW;
+				delete pCapas[i].pNeuronas[j].ultimoDeltaW;
+				delete pCapas[i].pNeuronas[j].w;
+				delete pCapas[i].pNeuronas[j].wCopia;
+			}
 		}
 		delete[] pCapas[i].pNeuronas;
 			
@@ -411,7 +413,7 @@ void PerceptronMulticapa::ejecutarAlgoritmoOnline(Datos * pDatosTrain, Datos * p
 			copiarPesos();
 			numSinMejorar = 0;
 		}
-		else if( (trainError-minTrainError) < 0.0001)
+		else if( (trainError-minTrainError) < 0.00001)
 			numSinMejorar = 0;
 		else
 			numSinMejorar++;

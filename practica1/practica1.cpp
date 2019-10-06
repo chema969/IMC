@@ -163,14 +163,34 @@ int main(int argc, char **argv) {
 
         double mediaErrorTest = 0, desviacionTipicaErrorTest = 0;
         double mediaErrorTrain = 0, desviacionTipicaErrorTrain = 0;
-        
-        // Calcular medias y desviaciones típicas de entrenamiento y test
 
-        cout << "INFORME FINAL" << endl;
-        cout << "*************" << endl;
-        cout << "Error de entrenamiento (Media +- DT): " << mediaErrorTrain << " +- " << desviacionTipicaErrorTrain << endl;
-        cout << "Error de test (Media +- DT):          " << mediaErrorTest << " +- " << desviacionTipicaErrorTest << endl;
-        return EXIT_SUCCESS;
+
+    		//Calcular medias y desviaciones típicas de entrenamiento y test
+    		for(int i=0; i<5; i++){
+    			mediaErrorTrain += erroresTrain[i];
+    			mediaErrorTest += erroresTest[i];
+    		}
+
+    		mediaErrorTest/=5;
+    		mediaErrorTrain/=5;
+
+    		double auxTest=0;
+    		double auxTrain=0;
+
+    		for(int i=0;i<5;i++){
+    			auxTest += pow(erroresTest[i]-mediaErrorTest,2);
+    			auxTrain += pow(erroresTrain[i]-mediaErrorTrain,2);
+    		}
+
+    		desviacionTipicaErrorTest = sqrt(auxTest/4);
+    		desviacionTipicaErrorTrain = sqrt(auxTrain/4);
+
+    		cout << "INFORME FINAL" << endl;
+    		cout << "*************" << endl;
+    		cout << "Error de entrenamiento (Media +- DT): " << mediaErrorTrain << " +- " << desviacionTipicaErrorTrain << endl;
+    		cout << "Error de test (Media +- DT):          " << mediaErrorTest << " +- " << desviacionTipicaErrorTest << endl;
+
+    		return EXIT_SUCCESS;
     }
     else {
 
