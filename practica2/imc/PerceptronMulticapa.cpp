@@ -280,9 +280,16 @@ void PerceptronMulticapa::ajustarPesos() {
 	for(int i=1;i<nNumCapas;i++){
 		for(int j=0;j<pCapas[i].nNumNeuronas;j++){
     		for(int k=1;k<pCapas[i-1].nNumNeuronas+1;k++){
-    			pCapas[i].pNeuronas[j].w[k]=pCapas[i].pNeuronas[j].w[k]-((eta*pCapas[i].pNeuronas[j].deltaW[k])/nNumPatronesTrain)-((dMu*(eta*pCapas[i].pNeuronas[j].ultimoDeltaW[k]))/nNumPatronesTrain);
+    			if(!bOnline)
+    				pCapas[i].pNeuronas[j].w[k]=pCapas[i].pNeuronas[j].w[k]-((eta*pCapas[i].pNeuronas[j].deltaW[k])/nNumPatronesTrain)-((dMu*(eta*pCapas[i].pNeuronas[j].ultimoDeltaW[k]))/nNumPatronesTrain);
+    			else
+    				pCapas[i].pNeuronas[j].w[k]=pCapas[i].pNeuronas[j].w[k]-(eta*pCapas[i].pNeuronas[j].deltaW[k])-(dMu*(eta*pCapas[i].pNeuronas[j].ultimoDeltaW[k]));
+
     		}
-			pCapas[i].pNeuronas[j].w[0]=pCapas[i].pNeuronas[j].w[0]-((eta*pCapas[i].pNeuronas[j].deltaW[0])/nNumPatronesTrain)-((dMu*(eta*pCapas[i].pNeuronas[j].ultimoDeltaW[0]))/nNumPatronesTrain);
+			if(!bOnline)
+				pCapas[i].pNeuronas[j].w[0]=pCapas[i].pNeuronas[j].w[0]-((eta*pCapas[i].pNeuronas[j].deltaW[0])/nNumPatronesTrain)-((dMu*(eta*pCapas[i].pNeuronas[j].ultimoDeltaW[0]))/nNumPatronesTrain);
+			else
+				pCapas[i].pNeuronas[j].w[0]=pCapas[i].pNeuronas[j].w[0]-(eta*pCapas[i].pNeuronas[j].deltaW[0])-(dMu*(eta*pCapas[i].pNeuronas[j].ultimoDeltaW[0]));
 		}
 		eta=pow(dDecremento,-(nNumCapas-i))*eta;
 	}
@@ -348,7 +355,6 @@ Datos* PerceptronMulticapa::leerDatos(const char *archivo) {
 // Entrenar la red para un determinado fichero de datos (pasar una vez por todos los patrones)
 void PerceptronMulticapa::entrenar(Datos* pDatosTrain, int funcionError) {
 	if(bOnline){
-		nNumPatronesTrain=1;
 		for(int r=0;r<pDatosTrain->nNumPatrones;r++){
 			for(int i=1; i < this->nNumCapas; i++){
 				for(int j=0; j < this->pCapas[i].nNumNeuronas; j++){
@@ -361,7 +367,6 @@ void PerceptronMulticapa::entrenar(Datos* pDatosTrain, int funcionError) {
 		}
 	}
 	else{
-		nNumPatronesTrain=pDatosTrain->nNumPatrones;
 		for(int i=1; i < this->nNumCapas; i++){
 			for(int j=0; j < this->pCapas[i].nNumNeuronas; j++){
 				for(int k=0; k < this->pCapas[i-1].nNumNeuronas + 1; k++){
@@ -465,9 +470,10 @@ void PerceptronMulticapa::ejecutarAlgoritmo(Datos * pDatosTrain, Datos * pDatosT
 
 	// Inicialización de pesos
 	pesosAleatorios();
-
+	double testError = 0;
 	double minTrainError = 0;
 	int numSinMejorar;
+	nNumPatronesTrain = pDatosTrain->nNumPatrones;
 	double minValidationError=0;
 	double numSinMejorarValidacion=0;
 	double trainError=0.0;
@@ -554,11 +560,10 @@ void PerceptronMulticapa::ejecutarAlgoritmo(Datos * pDatosTrain, Datos * pDatosT
 		}
 
 		countTrain++;
-
-		cout << "Iteración " << countTrain << "\t Error de entrenamiento: " << trainError << "\t Error de validación: " << validationError << endl;
-
+		testError = test(pDatosTest,funcionError);
+		countTrain++;
+		cout << "Iteración " << countTrain << "\t Error de entrenamiento: " << trainError << "\t Error de test: " << testError << "\t Error de validacion: " << validationError << endl;
 	} while ( countTrain<maxiter );
-
 	if ( (numSinMejorarValidacion!=50) && (numSinMejorar!=50))
 		restaurarPesos();
 
