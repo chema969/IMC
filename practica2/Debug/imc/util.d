@@ -1,1 +1,1 @@
-imc/util.o: ../imc/util.cpp
+imc/util.d: ../imc/util.cpp

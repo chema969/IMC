@@ -159,7 +159,10 @@ int main(int argc, char **argv) {
         	tipoCapas[capas+2-1]=0;
         // Inicializar red con vector de topología
         mlp.inicializar(capas+2,topologia,tipoCapas);
-
+        int** matrizconf=new int*[pDatosTrain->nNumSalidas];
+        
+        for(int j=0;j<pDatosTrain->nNumSalidas;j++)
+        	matrizconf[j]= new int[pDatosTrain->nNumSalidas];
 
         // Semilla de los números aleatorios
         int semillas[] = {1,2,3,4,5};
@@ -174,7 +177,7 @@ int main(int argc, char **argv) {
         	cout << "SEMILLA " << semillas[i] << endl;
         	cout << "**********" << endl;
     		srand(semillas[i]);
-    		mlp.ejecutarAlgoritmo(pDatosTrain,pDatosTest,iteraciones,&(erroresTrain[i]),&(errores[i]),&(ccrsTrain[i]),&(ccrs[i]),error);
+    		mlp.ejecutarAlgoritmo(pDatosTrain,pDatosTest,iteraciones,&(erroresTrain[i]),&(errores[i]),&(ccrsTrain[i]),&(ccrs[i]),error,matrizconf);
     		cout << "Finalizamos => CCR de test final: " << ccrs[i] << endl;
 
             // (Opcional - Kaggle) Guardamos los pesos cada vez que encontremos un modelo mejor.
@@ -186,7 +189,7 @@ int main(int argc, char **argv) {
 
         }
 
-
+        
         double mediaErrorTest = 0, desviacionTipicaErrorTest = 0;
         double mediaErrorTrain = 0, desviacionTipicaErrorTrain = 0;
         double mediaCCR = 0, desviacionTipicaCCR = 0;
@@ -196,7 +199,7 @@ int main(int argc, char **argv) {
 		//Calcular medias y desviaciones típicas de entrenamiento y test
 		for(int i=0; i<5; i++){
 			mediaCCR+= ccrs[i];
-			mediaCCRTrain= ccrsTrain[i];
+			mediaCCRTrain+= ccrsTrain[i];
 			mediaErrorTrain += erroresTrain[i];
 			mediaErrorTest += erroresTest[i];
 		}
@@ -228,6 +231,14 @@ int main(int argc, char **argv) {
         cout << "Error de test (Media +- DT): " << mediaErrorTest << " +- " << desviacionTipicaErrorTest << endl;
         cout << "CCR de entrenamiento (Media +- DT): " << mediaCCRTrain << " +- " << desviacionTipicaCCRTrain << endl;
         cout << "CCR de test (Media +- DT): " << mediaCCR << " +- " << desviacionTipicaCCR << endl;
+        cout<<"Matriz de confusión"<<endl;
+        for(int i=0;i<pDatosTrain->nNumSalidas; i++){
+        	cout<<"|";
+        	for(int j=0;j<pDatosTrain->nNumSalidas;j++){
+        		cout<<" "<<matrizconf[i][j];
+        	}
+        	cout<<" |"<<endl;
+        }
     	return EXIT_SUCCESS;
     } else {
 

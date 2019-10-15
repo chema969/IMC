@@ -189,7 +189,6 @@ double PerceptronMulticapa::calcularErrorSalida(double* target, int funcionError
 		}
 	error=(double)error/pCapas[nNumCapas-1].nNumNeuronas;
 	}
-
 	return error;
 }
 
@@ -213,33 +212,33 @@ void PerceptronMulticapa::retropropagarError(double* objetivo, int funcionError)
 			}
 	}
 	else{
-		if(funcionError==0){
-			for(int i=0;i<pCapas[nNumCapas-1].nNumNeuronas;i++){
-				double sumder=0.0;
+			if(funcionError==0){
 				for(int j=0;j<pCapas[nNumCapas-1].nNumNeuronas;j++){
-					double outj=pCapas[nNumCapas-1].pNeuronas[i].x;
-					double outi=pCapas[nNumCapas-1].pNeuronas[j].x;
-					if(i!=j)
-						sumder+=-1*(objetivo[i]-outi)*-outi*outj;
-					else
-						sumder+=-1*(objetivo[i]-outj)*(1-outj)*outj;
+					double sumder=0.0;
+					for(int i=0;i<pCapas[nNumCapas-1].nNumNeuronas;i++){
+						double outj=pCapas[nNumCapas-1].pNeuronas[j].x;
+						double outi=pCapas[nNumCapas-1].pNeuronas[i].x;
+						if(i!=j)
+							sumder+=-1*(objetivo[i]-outi)*-outi*outj;
+						else
+							sumder+=-1*(objetivo[i]-outj)*(1-outj)*outj;
+					}
+					pCapas[nNumCapas-1].pNeuronas[j].dX=sumder;
 				}
-				pCapas[nNumCapas-1].pNeuronas[i].dX=sumder;
 			}
-		}
-		else{
-			for(int i=0;i<pCapas[nNumCapas-1].nNumNeuronas;i++){
-				double sumder=0.0;
+			else{
 				for(int j=0;j<pCapas[nNumCapas-1].nNumNeuronas;j++){
-					double outj=pCapas[nNumCapas-1].pNeuronas[i].x;
-					double outi=pCapas[nNumCapas-1].pNeuronas[j].x;
-					if(i!=j)
-						sumder+=-1*(objetivo[i]/outi)*-outi*outj;
-					else
-						sumder+=-1*(objetivo[i]/outj)*(1-outj)*outj;
+					double sumder=0.0;
+					for(int i=0;i<pCapas[nNumCapas-1].nNumNeuronas;i++){
+						double outj=pCapas[nNumCapas-1].pNeuronas[j].x;
+						double outi=pCapas[nNumCapas-1].pNeuronas[i].x;
+						if(i!=j)
+							sumder+=-1*(objetivo[i]/outi)*(-outi)*outj;
+						else
+							sumder+=-1*(objetivo[i]/outj)*(1-outj)*outj;
+					}
+					pCapas[nNumCapas-1].pNeuronas[j].dX=sumder;
 				}
-				pCapas[nNumCapas-1].pNeuronas[i].dX=sumder;
-			}
 			}
 	}
     for(int j=nNumCapas-2;j>=1;j--){
@@ -424,39 +423,43 @@ void PerceptronMulticapa::predecir(Datos* pDatosTest)
 
 // ------------------------------
 // Probar la red con un conjunto de datos y devolver el CCR
-double PerceptronMulticapa::testClassification(Datos* pDatosTest) {
+double PerceptronMulticapa::testClassification(Datos* pDatosTest,int ** matrizConf) {
 	double ccr=0.0;
 	int numSalidas = pCapas[nNumCapas-1].nNumNeuronas;
+
+	if(matrizConf!=NULL){
+		for(int i=0;i<numSalidas;i++)
+			for(int k=0;k<numSalidas;k++)
+				matrizConf[i][k]=0;
+	}
 	double * salidas = new double[numSalidas];
 	for(int i=0;i<pDatosTest->nNumPatrones;i++){
 		alimentarEntradas(pDatosTest->entradas[i]);
 		propagarEntradas();
 		recogerSalidas(salidas);
-		if(numSalidas==1){
-			if(salidas[0]>0.5){
-				if(pDatosTest->salidas[i][0]==1)
-					ccr++;
-			}
-			else{
-				if(pDatosTest->salidas[i][0]==0)
-					ccr++;
+
+		double mayor=salidas[0];
+		int indiceMayor=0;
+		for(int j=1;j<numSalidas;j++){
+			if(mayor<salidas[j]){
+				mayor=salidas[j];
+				indiceMayor=j;
 			}
 		}
-		else{
-			double mayor=salidas[0];
-			int indiceMayor=0;
-			for(int j=1;j<numSalidas;j++){
-				if(mayor<salidas[j]){
-					mayor=salidas[j];
-					indiceMayor=j;
-				}
+		if(pDatosTest->salidas[i][indiceMayor]==1){
+			ccr++;
+		}
+		if(matrizConf!=NULL){
+			int j=0;
+			for(int k=0;k<numSalidas;k++){
+				if(pDatosTest->salidas[i][k]==1)
+					j=k;
 			}
-			if(pDatosTest->salidas[i][indiceMayor]==1){
-				ccr++;
-			}
+			matrizConf[indiceMayor][j]++;
 		}
 	}
-	return ccr/pDatosTest->nNumPatrones;
+	
+	return (ccr/pDatosTest->nNumPatrones)*100;
 }
 
 // ------------------------------
@@ -464,7 +467,7 @@ double PerceptronMulticapa::testClassification(Datos* pDatosTest) {
 // Una vez terminado, probar como funciona la red en pDatosTest
 // Tanto el error MSE de entrenamiento como el error MSE de test debe calcularse y almacenarse en errorTrain y errorTest
 // funcionError=1 => EntropiaCruzada // funcionError=0 => MSE
-void PerceptronMulticapa::ejecutarAlgoritmo(Datos * pDatosTrain, Datos * pDatosTest, int maxiter, double *errorTrain, double *errorTest, double *ccrTrain, double *ccrTest, int funcionError)
+void PerceptronMulticapa::ejecutarAlgoritmo(Datos * pDatosTrain, Datos * pDatosTest, int maxiter, double *errorTrain, double *errorTest, double *ccrTrain, double *ccrTest, int funcionError,int** matrizconf)
 {
 	int countTrain = 0;
 
@@ -476,7 +479,6 @@ void PerceptronMulticapa::ejecutarAlgoritmo(Datos * pDatosTrain, Datos * pDatosT
 	nNumPatronesTrain = pDatosTrain->nNumPatrones;
 	double minValidationError=0;
 	double numSinMejorarValidacion=0;
-	double trainError=0.0;
 	double validationError=0.0;
 	Datos *pDatosValidacion=NULL;
 
@@ -526,7 +528,9 @@ void PerceptronMulticapa::ejecutarAlgoritmo(Datos * pDatosTrain, Datos * pDatosT
 
 	// Aprendizaje del algoritmo
 	do {
+		entrenar(pDatosTrain,funcionError);
 
+				double trainError = test(pDatosTrain,funcionError);
 		if(dValidacion > 0 && dValidacion < 1){
 			if(countTrain==0 || validationError < minValidationError){
 						minValidationError = validationError;
@@ -590,7 +594,7 @@ void PerceptronMulticapa::ejecutarAlgoritmo(Datos * pDatosTrain, Datos * pDatosT
 	*errorTest=test(pDatosTest,funcionError);;
 	*errorTrain=minTrainError;
 	*ccrTest = testClassification(pDatosTest);
-	*ccrTrain = testClassification(pDatosTrain);
+	*ccrTrain = testClassification(pDatosTrain,matrizconf);
 
 }
 
