@@ -6,7 +6,7 @@
 // Copyright   : Universidad de Córdoba
 //============================================================================
 
-
+#include <string>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -166,7 +166,6 @@ int main(int argc, char **argv) {
 
         // Semilla de los números aleatorios
         int semillas[] = {1,2,3,4,5};
-        double *errores = new double[5];
         double *erroresTrain = new double[5];
         double *erroresTest = new double[5];
         double *ccrs = new double[5];
@@ -177,7 +176,7 @@ int main(int argc, char **argv) {
         	cout << "SEMILLA " << semillas[i] << endl;
         	cout << "**********" << endl;
     		srand(semillas[i]);
-    		mlp.ejecutarAlgoritmo(pDatosTrain,pDatosTest,iteraciones,&(erroresTrain[i]),&(errores[i]),&(ccrsTrain[i]),&(ccrs[i]),error,matrizconf);
+    		mlp.ejecutarAlgoritmo(pDatosTrain,pDatosTest,iteraciones,&(erroresTrain[i]),&(erroresTest[i]),&(ccrsTrain[i]),&(ccrs[i]),error,matrizconf);
     		cout << "Finalizamos => CCR de test final: " << ccrs[i] << endl;
 
             // (Opcional - Kaggle) Guardamos los pesos cada vez que encontremos un modelo mejor.

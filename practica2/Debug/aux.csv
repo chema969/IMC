@@ -1,0 +1,4 @@
+Función,Error,media_train,desv_tipica_train,media_test,desv_tipica_test,CCR_Train,desv_CCR_Train,CCR_Test,desv_ccr_Test
+softmax,0,0.0170913,0.000714487,0.039261,0.00244994,93.8667,0.253372,84,1.47196
+softmax,0,0.0490233,0.0114832,0.0585734,0.00764259,82.0889,4.31005,79.2,2.74469
+
