@@ -6,38 +6,34 @@ Created on Wed Oct 28 12:37:04 2016
 @author: pagutierrez
 """
 
-# TODO Incluir todos los import necesarios
 import pickle
+import sklearn
+import sklearn.cluster
 import os
 import pandas as pd
+import numpy as np
+import click
 
 @click.command()
 @click.option('--train_file', '-t', default=None, required=False,
               help=u'Fichero con los datos de entrenamiento.')
-              
 @click.option('--test_file', '-T', default=None, required=False,
               help=u'Fichero con los datos de test.')
-              
 @click.option('--classification', '-c', is_flag=True, default=False, show_default=True,
               help=u'Indica si el problema es de clasificación.')
-              
-@click.option('--ratio rbf', '-r', default=0.1, required=False,
-              help=u'Indica la razón (en tanto por 1) de neuronas RBF con respecto al total de patrones en entrenamiento.')
-         
 @click.option('--l2', '-l', is_flag=True, default=False, show_default=True,
               help=u'Indica si utilizaremos regularizacion de L2.')
-              
-@click.option('--eta', '-e', default=1e−2, required=False,
+@click.option('--eta', '-e', default=0.01, required=False,
               help=u'Indica el valor del parametro eta.')
-              
 @click.option('--outputs', '-o', default=1, required=False,
               help=u'Indica el numero de columnas de salida que tiene el conjunto.')
-              
+@click.option('--ratio_rbf', '-r', default=0.1, required=False,
+              help=u'Indica la razón (en tanto por 1) de neuronas RBF con respecto al total de patrones en entrenamiento.')
 @click.option('--model_file', '-m', default="", show_default=True,
               help=u'Fichero en el que se guardará o desde el que se cargará el modelo (si existe el flag p).') # KAGGLE
-
 @click.option('--pred', '-p', is_flag=True, default=False, show_default=True,
               help=u'Activar el modo de predicción.') # KAGGLE
+
 def entrenar_rbf_total(train_file, test_file, classification, ratio_rbf, l2, eta, outputs, model_file, pred):
     """ Modelo de aprendizaje supervisado mediante red neuronal de tipo RBF.
         Ejecución de 5 semillas.
@@ -61,7 +57,7 @@ def entrenar_rbf_total(train_file, test_file, classification, ratio_rbf, l2, eta
             print("-----------")
             np.random.seed(s)
             train_mses[s-1], test_mses[s-1], train_ccrs[s-1], test_ccrs[s-1] = \
-                entrenar_rbf(train_file, test_file, classification, ratio_rbf, l2, eta, outputs, \
+                entrenar_rbf( train_inputs, train_outputs, test_inputs, test_outputs, classification, ratio_rbf, l2, eta, outputs, \
                              model_file and "{}/{}.pickle".format(model_file, s//100) or "")
             print("MSE de entrenamiento: %f" % train_mses[s-1])
             print("MSE de test: %f" % test_mses[s-1])
@@ -129,7 +125,7 @@ def entrenar_rbf(train_inputs, train_outputs, test_inputs, test_outputs, classif
     """
 
 
-    #TODO: Obtener num_rbf a partir de ratio_rbf
+    num_rbf=round(ratio_rbf*len(train_inputs))
     print("Número de RBFs utilizadas: %d" %(num_rbf))
     kmedias, distancias, centros = clustering(classification, train_inputs, 
                                               train_outputs, num_rbf)
@@ -140,14 +136,32 @@ def entrenar_rbf(train_inputs, train_outputs, test_inputs, test_outputs, classif
 
     if not classification:
         coeficientes = invertir_matriz_regresion(matriz_r, train_outputs)
+        train_predictions = np.dot(matriz_r, coeficientes)
+        sumatrain=np.sum(np.power(train_predictions-train_outputs,2))
+        train_mse=sumatrain/(len(train_outputs)*outputs)
+        train_ccr=0
     else:
         logreg = logreg_clasificacion(matriz_r, train_outputs, eta, l2)
+        predicciones=logreg.predict_proba(matriz_r)
+        
+        matriz_deseados=np.empty([len(train_inputs),len(np.unique(train_outputs))])
+        for i in range(0,len(train_outputs)):
+            for j in range(0,len(np.unique(train_outputs))):
+                if j==train_outputs[i]:
+                    matriz_deseados[i,j]=1
+                else:
+                    matriz_deseados[i,j]=0
+        
+        sumatrain=np.sum(np.power(predicciones-matriz_deseados,2))
+        train_mse=sumatrain/(len(train_outputs)*len(np.unique(train_outputs)))       
+        train_ccr=100*logreg.score(matriz_r, train_outputs)
 
     """
-    TODO: Calcular las distancias de los centroides a los patrones de test
+     Calcular las distancias de los centroides a los patrones de test
           y la matriz R de test
     """
-
+    distancias_test=kmedias.transform(test_inputs)
+    matriz_r_test=calcular_matriz_r(distancias_test,radios)
     # # # # KAGGLE # # # #
     if model_file != "":
         save_obj = {
@@ -171,16 +185,32 @@ def entrenar_rbf(train_inputs, train_outputs, test_inputs, test_outputs, classif
 
     if not classification:
         """
-        TODO: Obtener las predicciones de entrenamiento y de test y calcular
+         Obtener las predicciones de entrenamiento y de test y calcular
               el MSE
         """
+        test_predictions = np.dot(matriz_r_test, coeficientes)
+        sumatest=np.sum(np.power(test_predictions-test_outputs,2))
+        test_mse=sumatest/len(test_outputs)
+        test_ccr=0
     else:
         """
-        TODO: Obtener las predicciones de entrenamiento y de test y calcular
+         Obtener las predicciones de entrenamiento y de test y calcular
               el CCR. Calcular también el MSE, comparando las probabilidades 
               obtenidas y las probabilidades objetivo
         """
-
+        """test_predictions = logreg.predict(matriz_r_test)"""
+        predicciones=logreg.predict_proba(matriz_r_test)
+        matriz_deseados=np.empty([len(test_inputs),len(np.unique(test_outputs))])
+        for i in range(0,len(test_outputs)):
+            for j in range(0,len(np.unique(test_outputs))):
+                if j==test_outputs[i]:
+                    matriz_deseados[i,j]=1
+                else:
+                    matriz_deseados[i,j]=0
+        sumatest=np.sum(np.power(predicciones-matriz_deseados,2))
+        test_mse=sumatest/(len(test_outputs)*len(np.unique(train_outputs)))
+        test_ccr=100*logreg.score(matriz_r_test,test_outputs)
+        
     return train_mse, test_mse, train_ccr, test_ccr
 
     
@@ -202,7 +232,14 @@ def lectura_datos(fichero_train, fichero_test, outputs):
               test.
     """
 
-    train_inputs=pd.read_csv(fichero_train,header=0)
+    train=pd.read_csv(fichero_train,header=0)
+    train=np.array(train)
+    train_inputs=train[:,:-outputs]
+    train_outputs=train[:,-outputs:]
+    test=pd.read_csv(fichero_test,header=0)
+    test=np.array(test)
+    test_inputs=test[:,:-outputs]
+    test_outputs=test[:,-outputs:]
     return train_inputs, train_outputs, test_inputs, test_outputs
 
 def inicializar_centroides_clas(train_inputs, train_outputs, num_rbf):
@@ -219,8 +256,10 @@ def inicializar_centroides_clas(train_inputs, train_outputs, num_rbf):
             - centroides: matriz con todos los centroides iniciales
                           (num_rbf x num_entradas).
     """
-    
-    #TODO: Completar el código de la función
+    from sklearn.model_selection import train_test_split
+    x, centroides, y_train, y_test = train_test_split(train_inputs, train_outputs,
+                                                    stratify=train_outputs, 
+                                                    test_size=num_rbf/len(train_inputs))
     return centroides
 
 def clustering(clasificacion, train_inputs, train_outputs, num_rbf):
@@ -241,8 +280,15 @@ def clustering(clasificacion, train_inputs, train_outputs, num_rbf):
             - centros: matriz (num_rbf x num_entradas) con los centroides 
               obtenidos tras el proceso de clustering.
     """
-
-    #TODO: Completar el código de la función
+    
+    if(clasificacion):
+        centroides=inicializar_centroides_clas(train_inputs,train_outputs,num_rbf)
+        kmedias=sklearn.cluster.KMeans(len(centroides),centroides,1,500).fit(train_inputs,train_outputs)
+    else:
+        kmedias=sklearn.cluster.KMeans(num_rbf,n_init=1, max_iter=500).fit(train_inputs,train_outputs)              
+    centros=kmedias.cluster_centers_    
+    distancias=kmedias.transform(train_inputs)
+    
     return kmedias, distancias, centros
 
 def calcular_radios(centros, num_rbf):
@@ -253,8 +299,14 @@ def calcular_radios(centros, num_rbf):
         Devuelve:
             - radios: vector (num_rbf) con el radio de cada RBF.
     """
-
-    #TODO: Completar el código de la función
+    import scipy.spatial.distance
+    dist=scipy.spatial.distance.squareform(scipy.spatial.distance.pdist(centros))
+    radios=[]
+    for x in range(0,num_rbf):
+        sumdist=0
+        sumdist=sum(dist[x])    
+        sumdist=sumdist/(2*num_rbf-1)
+        radios=np.append(radios,sumdist)
     return radios
 
 def calcular_matriz_r(distancias, radios):
@@ -270,8 +322,18 @@ def calcular_matriz_r(distancias, radios):
               al final, en la última columna, un vector con todos los 
               valores a 1, que actuará como sesgo.
     """
-
-    #TODO: Completar el código de la función
+    import math
+    from numpy import empty
+    matriz_r=empty([len(distancias),len(radios)+1])
+    for i in range(0,len(distancias)):
+        
+            for j in range(0,len(radios)):
+                aux=math.exp((distancias[i,j]*distancias[i,j])/(2*radios[j]*radios[j]))
+                matriz_r[i][j]=aux
+    """ matriz_r=np.exp((distancias*distancias)/(2*radio*radio))  """              
+    for i in range(0,len(distancias)):
+        matriz_r[i,-1]=1
+        
     return matriz_r
 
 def invertir_matriz_regresion(matriz_r, train_outputs):
@@ -289,7 +351,7 @@ def invertir_matriz_regresion(matriz_r, train_outputs):
               coeficiente de salida para cada rbf.
     """
 
-    #TODO: Completar el código de la función
+    coeficientes=np.matmul(np.linalg.pinv(matriz_r),train_outputs)
     return coeficientes
 
 def logreg_clasificacion(matriz_r, train_outputs, eta, l2):
@@ -311,7 +373,13 @@ def logreg_clasificacion(matriz_r, train_outputs, eta, l2):
               entrenado.
     """
 
-    #TODO: Completar el código de la función
+    import sklearn.linear_model
+    logreg=0
+    if l2:
+        logreg=sklearn.linear_model.LogisticRegression(penalty='l2',C=1/eta,solver='liblinear',multi_class='auto',max_iter=600)
+    else:
+        logreg=sklearn.linear_model.LogisticRegression(penalty='l1',C=1/eta,solver='liblinear',multi_class='auto',max_iter=600)
+    logreg.fit(matriz_r,train_outputs.ravel())
     return logreg
 
 
