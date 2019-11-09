@@ -5,7 +5,6 @@ Created on Wed Oct 28 12:37:04 2016
 
 @author: pagutierrez
 """
-
 import pickle
 import sklearn
 import sklearn.cluster
@@ -136,7 +135,7 @@ def entrenar_rbf(train_inputs, train_outputs, test_inputs, test_outputs, classif
 
     if not classification:
         coeficientes = invertir_matriz_regresion(matriz_r, train_outputs)
-        train_predictions = np.dot(matriz_r, coeficientes)
+        train_predictions = np.matmul(matriz_r, coeficientes)
         sumatrain=np.sum(np.power(train_predictions-train_outputs,2))
         train_mse=sumatrain/(len(train_outputs)*outputs)
         train_ccr=0
@@ -188,7 +187,7 @@ def entrenar_rbf(train_inputs, train_outputs, test_inputs, test_outputs, classif
          Obtener las predicciones de entrenamiento y de test y calcular
               el MSE
         """
-        test_predictions = np.dot(matriz_r_test, coeficientes)
+        test_predictions = np.matmul(matriz_r_test, coeficientes)
         sumatest=np.sum(np.power(test_predictions-test_outputs,2))
         test_mse=sumatest/len(test_outputs)
         test_ccr=0
@@ -288,7 +287,6 @@ def clustering(clasificacion, train_inputs, train_outputs, num_rbf):
         kmedias=sklearn.cluster.KMeans(num_rbf,n_init=1, max_iter=500).fit(train_inputs,train_outputs)              
     centros=kmedias.cluster_centers_    
     distancias=kmedias.transform(train_inputs)
-    
     return kmedias, distancias, centros
 
 def calcular_radios(centros, num_rbf):
@@ -300,13 +298,15 @@ def calcular_radios(centros, num_rbf):
             - radios: vector (num_rbf) con el radio de cada RBF.
     """
     import scipy.spatial.distance
+
     dist=scipy.spatial.distance.squareform(scipy.spatial.distance.pdist(centros))
     radios=[]
     for x in range(0,num_rbf):
         sumdist=0
         sumdist=sum(dist[x])    
-        sumdist=sumdist/(2*num_rbf-1)
+        sumdist=sumdist/(2*(num_rbf-1))
         radios=np.append(radios,sumdist)
+
     return radios
 
 def calcular_matriz_r(distancias, radios):
@@ -324,13 +324,13 @@ def calcular_matriz_r(distancias, radios):
     """
     import math
     from numpy import empty
+    #Creamos una matriz vacia
     matriz_r=empty([len(distancias),len(radios)+1])
-    for i in range(0,len(distancias)):
-        
+    for i in range(0,len(distancias)): 
             for j in range(0,len(radios)):
                 aux=math.exp((distancias[i,j]*distancias[i,j])/(2*radios[j]*radios[j]))
                 matriz_r[i][j]=aux
-    """ matriz_r=np.exp((distancias*distancias)/(2*radio*radio))  """              
+             
     for i in range(0,len(distancias)):
         matriz_r[i,-1]=1
         
@@ -350,8 +350,10 @@ def invertir_matriz_regresion(matriz_r, train_outputs):
             - coeficientes: vector (num_rbf+1) con el valor del sesgo y del 
               coeficiente de salida para cada rbf.
     """
-
-    coeficientes=np.matmul(np.linalg.pinv(matriz_r),train_outputs)
+    if len(matriz_r)==len(matriz_r[0]):
+        coeficientes=np.matmul(np.linalg.inv(matriz_r),train_outputs)
+    else:
+        coeficientes=np.matmul(np.linalg.pinv(matriz_r),train_outputs)
     return coeficientes
 
 def logreg_clasificacion(matriz_r, train_outputs, eta, l2):
