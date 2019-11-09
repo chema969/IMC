@@ -231,12 +231,15 @@ def lectura_datos(fichero_train, fichero_test, outputs):
               test.
     """
 
-    train=pd.read_csv(fichero_train,header=0)
+    train=pd.read_csv(fichero_train,header=None)
     train=np.array(train)
+    train = train.astype(np.float64)
     train_inputs=train[:,:-outputs]
     train_outputs=train[:,-outputs:]
-    test=pd.read_csv(fichero_test,header=0)
+
+    test=pd.read_csv(fichero_test,header=None)
     test=np.array(test)
+    test = test.astype(np.float64)
     test_inputs=test[:,:-outputs]
     test_outputs=test[:,-outputs:]
     return train_inputs, train_outputs, test_inputs, test_outputs
@@ -300,7 +303,7 @@ def calcular_radios(centros, num_rbf):
     import scipy.spatial.distance
 
     dist=scipy.spatial.distance.squareform(scipy.spatial.distance.pdist(centros))
-    radios=[]
+    radios=np.array([],dtype=np.float64)
     for x in range(0,num_rbf):
         sumdist=0
         sumdist=sum(dist[x])    
@@ -326,6 +329,7 @@ def calcular_matriz_r(distancias, radios):
     from numpy import empty
     #Creamos una matriz vacia
     matriz_r=empty([len(distancias),len(radios)+1])
+    matriz_r.astype(np.float64)
     for i in range(0,len(distancias)): 
             for j in range(0,len(radios)):
                 aux=math.exp((distancias[i,j]*distancias[i,j])/(2*radios[j]*radios[j]))
