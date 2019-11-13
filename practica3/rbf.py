@@ -17,6 +17,7 @@ import sklearn.preprocessing
 import warnings
 import scipy.spatial.distance
 import sklearn.linear_model
+import sklearn.metrics
 from sklearn.model_selection import train_test_split
 import math
 
@@ -146,6 +147,7 @@ def entrenar_rbf(train_inputs, train_outputs, test_inputs, test_outputs, classif
         coeficientes = invertir_matriz_regresion(matriz_r, train_outputs)
         train_predictions = np.matmul(matriz_r, coeficientes)
         train_mse=sklearn.metrics.mean_squared_error(train_predictions,train_outputs)
+        #train_ccr=100*sklearn.metrics.accuracy_score(train_outputs,np.around(train_predictions))
         train_ccr=0
     else:
         logreg = logreg_clasificacion(matriz_r, train_outputs, eta, l2)
@@ -188,6 +190,7 @@ def entrenar_rbf(train_inputs, train_outputs, test_inputs, test_outputs, classif
         """
         test_predictions = np.matmul(matriz_r_test, coeficientes)
         test_mse=sklearn.metrics.mean_squared_error(test_predictions,test_outputs)
+        #test_ccr=100*sklearn.metrics.accuracy_score(test_outputs,np.around(test_predictions))        
         test_ccr=0
     else:
         """
@@ -276,12 +279,12 @@ def clustering(clasificacion, train_inputs, train_outputs, num_rbf):
     """
     
     if(clasificacion):
-        #centroides=inicializar_centroides_clas(train_inputs,train_outputs,num_rbf)
-        #kmedias=sklearn.cluster.KMeans(len(centroides),centroides,1,500).fit(train_inputs,train_outputs)
-        kmedias=sklearn.cluster.KMeans(num_rbf, init='k-means++', n_init=1, max_iter=500).fit(train_inputs,train_outputs)              
+        centroides=inicializar_centroides_clas(train_inputs,train_outputs,num_rbf)
+        kmedias=sklearn.cluster.KMeans(len(centroides),centroides,1,500).fit(train_inputs,train_outputs)
+        #kmedias=sklearn.cluster.KMeans(num_rbf, init='k-means++', n_init=1, max_iter=500).fit(train_inputs,train_outputs)              
     else:
-        kmedias=sklearn.cluster.KMeans(num_rbf, init='k-means++', n_init=1, max_iter=500).fit(train_inputs,train_outputs)              
-        #kmedias=sklearn.cluster.KMeans(num_rbf, init='random', n_init=1, max_iter=500).fit(train_inputs,train_outputs)              
+        #kmedias=sklearn.cluster.KMeans(num_rbf, init='k-means++', n_init=1, max_iter=500).fit(train_inputs,train_outputs)              
+        kmedias=sklearn.cluster.KMeans(num_rbf, init='random', n_init=1, max_iter=500).fit(train_inputs,train_outputs)              
     centros=kmedias.cluster_centers_    
 
     distancias=kmedias.transform(train_inputs)
