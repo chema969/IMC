@@ -12,6 +12,15 @@ import os
 import pandas as pd
 import numpy as np
 import click
+import sklearn.metrics
+import sklearn.preprocessing
+import warnings
+import scipy.spatial.distance
+import sklearn.linear_model
+from sklearn.model_selection import train_test_split
+import math
+
+warnings.filterwarnings('ignore')
 
 @click.command()
 @click.option('--train_file', '-t', default=None, required=False,
@@ -51,26 +60,26 @@ def entrenar_rbf_total(train_file, test_file, classification, ratio_rbf, l2, eta
                                                                            test_file,
                                                                            outputs) 
         for s in range(1,6,1):
-            print("-----------")
+            """print("-----------")
             print("Semilla: %d" % s)
-            print("-----------")
+            print("-----------")"""
             np.random.seed(s)
             train_mses[s-1], test_mses[s-1], train_ccrs[s-1], test_ccrs[s-1] = \
                 entrenar_rbf( train_inputs, train_outputs, test_inputs, test_outputs, classification, ratio_rbf, l2, eta, outputs, \
-                             model_file and "{}/{}.pickle".format(model_file, s//100) or "")
-            print("MSE de entrenamiento: %f" % train_mses[s-1])
+                             model_file and "{}/{}.pickle".format(model_file, s) or "")
+            """print("MSE de entrenamiento: %f" % train_mses[s-1])
             print("MSE de test: %f" % test_mses[s-1])
             print("CCR de entrenamiento: %.2f%%" % train_ccrs[s-1])
-            print("CCR de test: %.2f%%" % test_ccrs[s-1])
+            print("CCR de test: %.2f%%" % test_ccrs[s-1])"""
 
-        print("*********************")
+        """ print("*********************")
         print("Resumen de resultados")
         print("*********************")
         print("MSE de entrenamiento: %f +- %f" % (np.mean(train_mses), np.std(train_mses)))
         print("MSE de test: %f +- %f" % (np.mean(test_mses), np.std(test_mses)))
         print("CCR de entrenamiento: %.2f%% +- %.2f%%" % (np.mean(train_ccrs), np.std(train_ccrs)))
-        print("CCR de test: %.2f%% +- %.2f%%" % (np.mean(test_ccrs), np.std(test_ccrs)))
-
+        print("CCR de test: %.2f%% +- %.2f%%" % (np.mean(test_ccrs), np.std(test_ccrs)))"""
+        print(eta,ratio_rbf,l2,np.mean(train_mses), np.std(train_mses),np.mean(train_ccrs), np.std(train_ccrs),np.mean(test_mses), np.std(test_mses),np.mean(test_ccrs), np.std(test_ccrs))
     else:
         # KAGGLE
         if model_file is None:
@@ -125,7 +134,7 @@ def entrenar_rbf(train_inputs, train_outputs, test_inputs, test_outputs, classif
 
 
     num_rbf=round(ratio_rbf*len(train_inputs))
-    print("Número de RBFs utilizadas: %d" %(num_rbf))
+    #print("Número de RBFs utilizadas: %d" %(num_rbf))
     kmedias, distancias, centros = clustering(classification, train_inputs, 
                                               train_outputs, num_rbf)
     
@@ -136,23 +145,13 @@ def entrenar_rbf(train_inputs, train_outputs, test_inputs, test_outputs, classif
     if not classification:
         coeficientes = invertir_matriz_regresion(matriz_r, train_outputs)
         train_predictions = np.matmul(matriz_r, coeficientes)
-        sumatrain=np.sum(np.power(train_predictions-train_outputs,2))
-        train_mse=sumatrain/(len(train_outputs)*outputs)
+        train_mse=sklearn.metrics.mean_squared_error(train_predictions,train_outputs)
         train_ccr=0
     else:
         logreg = logreg_clasificacion(matriz_r, train_outputs, eta, l2)
-        predicciones=logreg.predict_proba(matriz_r)
-        
-        matriz_deseados=np.empty([len(train_inputs),len(np.unique(train_outputs))])
-        for i in range(0,len(train_outputs)):
-            for j in range(0,len(np.unique(train_outputs))):
-                if j==train_outputs[i]:
-                    matriz_deseados[i,j]=1
-                else:
-                    matriz_deseados[i,j]=0
-        
-        sumatrain=np.sum(np.power(predicciones-matriz_deseados,2))
-        train_mse=sumatrain/(len(train_outputs)*len(np.unique(train_outputs)))       
+        predicciones=logreg.predict_proba(matriz_r)   
+        salidas_train= sklearn.preprocessing.OneHotEncoder(categories='auto').fit_transform(train_outputs).toarray()
+        train_mse=sklearn.metrics.mean_squared_error(predicciones,salidas_train)    
         train_ccr=100*logreg.score(matriz_r, train_outputs)
 
     """
@@ -188,8 +187,7 @@ def entrenar_rbf(train_inputs, train_outputs, test_inputs, test_outputs, classif
               el MSE
         """
         test_predictions = np.matmul(matriz_r_test, coeficientes)
-        sumatest=np.sum(np.power(test_predictions-test_outputs,2))
-        test_mse=sumatest/len(test_outputs)
+        test_mse=sklearn.metrics.mean_squared_error(test_predictions,test_outputs)
         test_ccr=0
     else:
         """
@@ -199,15 +197,9 @@ def entrenar_rbf(train_inputs, train_outputs, test_inputs, test_outputs, classif
         """
         """test_predictions = logreg.predict(matriz_r_test)"""
         predicciones=logreg.predict_proba(matriz_r_test)
-        matriz_deseados=np.empty([len(test_inputs),len(np.unique(test_outputs))])
-        for i in range(0,len(test_outputs)):
-            for j in range(0,len(np.unique(test_outputs))):
-                if j==test_outputs[i]:
-                    matriz_deseados[i,j]=1
-                else:
-                    matriz_deseados[i,j]=0
-        sumatest=np.sum(np.power(predicciones-matriz_deseados,2))
-        test_mse=sumatest/(len(test_outputs)*len(np.unique(train_outputs)))
+        salidas_test= sklearn.preprocessing.OneHotEncoder(categories='auto').fit_transform(test_outputs).toarray()
+
+        test_mse=sklearn.metrics.mean_squared_error(predicciones,salidas_test)
         test_ccr=100*logreg.score(matriz_r_test,test_outputs)
         
     return train_mse, test_mse, train_ccr, test_ccr
@@ -258,7 +250,7 @@ def inicializar_centroides_clas(train_inputs, train_outputs, num_rbf):
             - centroides: matriz con todos los centroides iniciales
                           (num_rbf x num_entradas).
     """
-    from sklearn.model_selection import train_test_split
+
     x, centroides, y_train, y_test = train_test_split(train_inputs, train_outputs,
                                                     stratify=train_outputs, 
                                                     test_size=num_rbf/len(train_inputs))
@@ -284,11 +276,14 @@ def clustering(clasificacion, train_inputs, train_outputs, num_rbf):
     """
     
     if(clasificacion):
-        centroides=inicializar_centroides_clas(train_inputs,train_outputs,num_rbf)
-        kmedias=sklearn.cluster.KMeans(len(centroides),centroides,1,500).fit(train_inputs,train_outputs)
+        #centroides=inicializar_centroides_clas(train_inputs,train_outputs,num_rbf)
+        #kmedias=sklearn.cluster.KMeans(len(centroides),centroides,1,500).fit(train_inputs,train_outputs)
+        kmedias=sklearn.cluster.KMeans(num_rbf, init='k-means++', n_init=1, max_iter=500).fit(train_inputs,train_outputs)              
     else:
-        kmedias=sklearn.cluster.KMeans(num_rbf,n_init=1, max_iter=500).fit(train_inputs,train_outputs)              
+        kmedias=sklearn.cluster.KMeans(num_rbf, init='k-means++', n_init=1, max_iter=500).fit(train_inputs,train_outputs)              
+        #kmedias=sklearn.cluster.KMeans(num_rbf, init='random', n_init=1, max_iter=500).fit(train_inputs,train_outputs)              
     centros=kmedias.cluster_centers_    
+
     distancias=kmedias.transform(train_inputs)
     return kmedias, distancias, centros
 
@@ -300,7 +295,6 @@ def calcular_radios(centros, num_rbf):
         Devuelve:
             - radios: vector (num_rbf) con el radio de cada RBF.
     """
-    import scipy.spatial.distance
 
     dist=scipy.spatial.distance.squareform(scipy.spatial.distance.pdist(centros))
     radios=np.array([],dtype=np.float64)
@@ -325,18 +319,16 @@ def calcular_matriz_r(distancias, radios):
               al final, en la última columna, un vector con todos los 
               valores a 1, que actuará como sesgo.
     """
-    import math
-    from numpy import empty
+
     #Creamos una matriz vacia
-    matriz_r=empty([len(distancias),len(radios)+1])
+    matriz_r=np.empty([len(distancias),len(radios)+1])
     matriz_r.astype(np.float64)
     for i in range(0,len(distancias)): 
             for j in range(0,len(radios)):
-                aux=math.exp((distancias[i,j]*distancias[i,j])/(2*radios[j]*radios[j]))
+                aux=math.exp((distancias[i,j]*distancias[i,j])/(-2*radios[j]*radios[j]))
                 matriz_r[i][j]=aux
              
-    for i in range(0,len(distancias)):
-        matriz_r[i,-1]=1
+    matriz_r[:,-1]=1
         
     return matriz_r
 
@@ -379,7 +371,6 @@ def logreg_clasificacion(matriz_r, train_outputs, eta, l2):
               entrenado.
     """
 
-    import sklearn.linear_model
     logreg=0
     if l2:
         logreg=sklearn.linear_model.LogisticRegression(penalty='l2',C=1/eta,solver='liblinear',multi_class='auto',max_iter=600)
