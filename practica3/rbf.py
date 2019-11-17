@@ -19,6 +19,7 @@ import scipy.spatial.distance
 import sklearn.linear_model
 import sklearn.metrics
 from sklearn.model_selection import train_test_split
+import time
 import math
 
 warnings.filterwarnings('ignore')
@@ -48,7 +49,7 @@ def entrenar_rbf_total(train_file, test_file, classification, ratio_rbf, l2, eta
         Ejecución de 5 semillas.
     """
     if not pred:
-
+        t0 = time.clock()
         if train_file is None:
             print("No se ha especificado el conjunto de entrenamiento (-t)")
             return
@@ -61,26 +62,27 @@ def entrenar_rbf_total(train_file, test_file, classification, ratio_rbf, l2, eta
                                                                            test_file,
                                                                            outputs) 
         for s in range(1,6,1):
-            """print("-----------")
+            print("-----------")
             print("Semilla: %d" % s)
-            print("-----------")"""
+            print("-----------")
             np.random.seed(s)
             train_mses[s-1], test_mses[s-1], train_ccrs[s-1], test_ccrs[s-1] = \
                 entrenar_rbf( train_inputs, train_outputs, test_inputs, test_outputs, classification, ratio_rbf, l2, eta, outputs, \
                              model_file and "{}/{}.pickle".format(model_file, s) or "")
-            """print("MSE de entrenamiento: %f" % train_mses[s-1])
+            print("MSE de entrenamiento: %f" % train_mses[s-1])
             print("MSE de test: %f" % test_mses[s-1])
             print("CCR de entrenamiento: %.2f%%" % train_ccrs[s-1])
-            print("CCR de test: %.2f%%" % test_ccrs[s-1])"""
+            print("CCR de test: %.2f%%" % test_ccrs[s-1])
 
-        """ print("*********************")
+        print("*********************")
         print("Resumen de resultados")
         print("*********************")
         print("MSE de entrenamiento: %f +- %f" % (np.mean(train_mses), np.std(train_mses)))
         print("MSE de test: %f +- %f" % (np.mean(test_mses), np.std(test_mses)))
         print("CCR de entrenamiento: %.2f%% +- %.2f%%" % (np.mean(train_ccrs), np.std(train_ccrs)))
-        print("CCR de test: %.2f%% +- %.2f%%" % (np.mean(test_ccrs), np.std(test_ccrs)))"""
-        print(eta,ratio_rbf,l2,np.mean(train_mses), np.std(train_mses),np.mean(train_ccrs), np.std(train_ccrs),np.mean(test_mses), np.std(test_mses),np.mean(test_ccrs), np.std(test_ccrs))
+        print("CCR de test: %.2f%% +- %.2f%%" % (np.mean(test_ccrs), np.std(test_ccrs)))
+        print (time.clock(), "segundos")
+        #print(eta,ratio_rbf,l2,np.mean(train_mses), np.std(train_mses),np.mean(train_ccrs), np.std(train_ccrs),np.mean(test_mses), np.std(test_mses),np.mean(test_ccrs), np.std(test_ccrs))
     else:
         # KAGGLE
         if model_file is None:
@@ -135,7 +137,7 @@ def entrenar_rbf(train_inputs, train_outputs, test_inputs, test_outputs, classif
 
 
     num_rbf=round(ratio_rbf*len(train_inputs))
-    #print("Número de RBFs utilizadas: %d" %(num_rbf))
+    print("Número de RBFs utilizadas: %d" %(num_rbf))
     kmedias, distancias, centros = clustering(classification, train_inputs, 
                                               train_outputs, num_rbf)
     
@@ -198,13 +200,17 @@ def entrenar_rbf(train_inputs, train_outputs, test_inputs, test_outputs, classif
               el CCR. Calcular también el MSE, comparando las probabilidades 
               obtenidas y las probabilidades objetivo
         """
-        """test_predictions = logreg.predict(matriz_r_test)"""
+        test_predictions = logreg.predict(matriz_r_test)
         predicciones=logreg.predict_proba(matriz_r_test)
         salidas_test= sklearn.preprocessing.OneHotEncoder(categories='auto').fit_transform(test_outputs).toarray()
 
         test_mse=sklearn.metrics.mean_squared_error(predicciones,salidas_test)
         test_ccr=100*logreg.score(matriz_r_test,test_outputs)
-        
+        print("Matríz de confusión del Test")
+        print(sklearn.metrics.confusion_matrix(test_outputs, test_predictions))
+        """for i in range(0,len(test_outputs)):
+           if test_predictions[i]!=test_outputs[i]:
+              print(i,test_predictions[i],test_outputs[i])"""
     return train_mse, test_mse, train_ccr, test_ccr
 
     
