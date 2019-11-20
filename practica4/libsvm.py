@@ -13,14 +13,14 @@ import pandas as pd
 from sklearn import svm
 
 # Cargar el dataset
-data = pd.read_csv('dataset1.csv',header=None)
+data = pd.read_csv('bases/dataset2.csv',header=None)
 X = data.iloc[:,:-1].values
 y = data.iloc[:,-1].values
 
 # Entrenar el modelo SVM
-svm_model = svm.SVC(kernel='linear',C=200)
+svm_model = svm.SVC(kernel='rbf',C=10e4,gamma=10)
 svm_model.fit(X, y)
-
+print(svm_model.score(X,y))
 # Representar los puntos
 plt.figure(1)
 plt.clf()

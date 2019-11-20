@@ -237,12 +237,15 @@ def lectura_datos(fichero_train, fichero_test, outputs):
     train = train.astype(np.float64)
     train_inputs=train[:,:-outputs]
     train_outputs=train[:,-outputs:]
-
+    
+    scaler = sklearn.preprocessing.StandardScaler()
+    train_inputs = scaler.fit_transform(train_inputs)
     test=pd.read_csv(fichero_test,header=None)
     test=np.array(test)
     test = test.astype(np.float64)
     test_inputs=test[:,:-outputs]
     test_outputs=test[:,-outputs:]
+    test_inputs = scaler.transform(test_inputs)
     return train_inputs, train_outputs, test_inputs, test_outputs
 
 def inicializar_centroides_clas(train_inputs, train_outputs, num_rbf):
