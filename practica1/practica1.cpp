@@ -1,7 +1,7 @@
 //============================================================================
 // Introducción a los Modelos Computacionales
 // Name        : practica1.cpp
-// Author      : Pedro A. Gutiérrez
+// Author      : José Manuel Cuevas Muñoz
 // Version     :
 // Copyright   : Universidad de Córdoba
 //============================================================================
